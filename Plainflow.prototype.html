@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plainflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDF1F6;--panel:#fff;--ink:#12203B;--mute:#5B6980;--line:#D5DDE8;--accent:#0B7A75;--on:#fff;--warn:#B45309;--soft:#E3EAF3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1626;--panel:#16223A;--ink:#E8EEF8;--mute:#93A2BC;--line:#2A3956;--accent:#3CC4BB;--on:#06211F;--warn:#F5B45A;--soft:#22314F}}
+:root[data-theme="dark"]{--bg:#0E1626;--panel:#16223A;--ink:#E8EEF8;--mute:#93A2BC;--line:#2A3956;--accent:#3CC4BB;--on:#06211F;--warn:#F5B45A;--soft:#22314F}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 Figtree,system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:32px 18px 64px}
+h1,h2{font-family:'Bricolage Grotesque',Figtree,sans-serif;margin:0}
+h1{font-size:clamp(2rem,6vw,3rem);line-height:1.05;letter-spacing:-.02em}
+h2{font-size:1.25rem;margin-bottom:12px}
+.lede{color:var(--mute);margin:10px 0 24px;max-width:52ch}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:22px}
+textarea,input[type=text]{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px}
+textarea{min-height:96px;resize:vertical}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button{font:600 .95rem Figtree,sans-serif;border-radius:10px;padding:10px 16px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button.pri{background:var(--accent);color:var(--on);border-color:var(--accent)}
+button:disabled{opacity:.55;cursor:wait}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.ex{font-weight:500;font-size:.85rem;background:var(--soft);border-color:transparent;border-radius:99px;padding:6px 12px;text-align:left}
+#msg{color:var(--warn);min-height:1.4em;margin:8px 0 0;font-size:.9rem}
+.node{display:flex;gap:12px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.node.trigger{border-left:5px solid var(--accent)}
+.link{width:2px;height:16px;background:var(--line);margin:0 0 0 27px}
+.chip{flex:none;width:34px;height:34px;border-radius:9px;color:#fff;font:700 1rem 'Bricolage Grotesque',sans-serif;display:grid;place-items:center}
+.nb{flex:1;min-width:0}
+.nb b{display:block;font-weight:600}
+.nb small{color:var(--mute)}
+.opts{display:flex;gap:14px;align-items:center;margin-top:6px;font-size:.85rem;color:var(--mute)}
+.opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.opts button{padding:2px 8px;font-size:.8rem;font-weight:500}
+.log{font-size:.92rem;margin-top:14px}
+.log div{padding:6px 0;border-top:1px solid var(--line)}
+.log .ok::before{content:"Done  ";color:var(--accent);font-weight:600}
+.log .wait{background:var(--soft);padding:10px;border-radius:8px}
+.log .skip{color:var(--mute)}
+.saved-item{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.saved-item .nb b{font-size:.95rem}
+.empty{color:var(--mute);margin:0}
+footer{color:var(--mute);font-size:.82rem}
+[hidden]{display:none!important}
+</style></head><body><main>
+<h1>Plainflow</h1>
+<p class="lede">Say what should happen in your own words. Plainflow turns it into steps you can review, test and switch on.</p>
+
+<section class="card" aria-labelledby="c">
+ <h2 id="c">What should happen?</h2>
+ <textarea id="prompt" aria-label="Describe your automation" placeholder="When a customer emails a complaint, log it in a sheet, notify me on Slack, and draft a reply"></textarea>
+ <div class="row"><button class="pri" id="build">Build automation</button>
+ <button class="ex" data-ex="When a customer emails a complaint, log it in a sheet, notify me on Slack, and draft a reply">Complaint handling</button>
+ <button class="ex" data-ex="When an invoice is 7 days overdue, email the client a polite reminder and tell me on Slack">Overdue invoices</button>
+ <button class="ex" data-ex="When someone fills my booking form, add it to my calendar and send a confirmation email">New bookings</button></div>
+ <p id="msg" role="status" aria-live="polite"></p>
+</section>
+
+<section class="card" id="flowwrap" hidden aria-labelledby="f">
+ <h2 id="f">Your automation</h2>
+ <input type="text" id="wfname" aria-label="Automation name">
+ <div id="flow" style="margin-top:14px"></div>
+ <div class="row"><button class="pri" id="test">Test run</button><button id="save">Save automation</button></div>
+ <div class="log" id="log" aria-live="polite"></div>
+</section>
+
+<section class="card" aria-labelledby="s">
+ <h2 id="s">Saved automations</h2>
+ <div id="saved"></div>
+</section>
+<footer>Test runs use sample data and don't touch your real accounts. Saved automations stay on this device.</footer>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const RISKY=/send|email|mail|reply|post|pay|charge|refund|delete|remove|text|sms|invoice/i;
+let wf=null,saved=[],busy=false,runId=0;
+try{saved=JSON.parse(localStorage.getItem('pf.saved')||'[]')}catch(e){saved=[]}
+const persist=()=>{try{localStorage.setItem('pf.saved',JSON.stringify(saved))}catch(e){}};
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+const msg=t=>$('#msg').textContent=t||'';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function chip(app){const c=el('span','chip',(app||'?').trim()[0]?.toUpperCase()||'?');let h=0;for(const ch of String(app))h=(h*31+ch.charCodeAt(0))%360;c.style.background='hsl('+h+' 50% 38%)';return c}
+
+function local(t){
+ const m=t.replace(/[.!]$/,'').match(/^(?:when|whenever|if|every time)\s+(.+?)[,;]\s*(.+)$/i);
+ const trig=m?m[1]:'Something happens',rest=m?m[2]:t;
+ const g=s=>/email|mail|reply|inbox/i.test(s)?'Gmail':/slack|notify|message/i.test(s)?'Slack':/log|sheet|spreadsheet|record|row/i.test(s)?'Google Sheets':/invoice|payment/i.test(s)?'QuickBooks':/calendar|meeting|schedule|book/i.test(s)?'Google Calendar':'Your app';
+ const parts=rest.split(/,\s*(?:and\s+)?|\s+and\s+|\s+then\s+/i).map(s=>s.trim()).filter(Boolean).slice(0,6);
+ return {name:cap(trig).slice(0,48),trigger:{app:g(trig),event:cap(trig)},steps:parts.map(p=>({app:g(p),action:cap(p),detail:'',risky:RISKY.test(p)}))};
+}
+function valid(w){return w&&w.trigger&&w.trigger.event&&Array.isArray(w.steps)&&w.steps.length&&w.steps.every(s=>s.action)}
+
+async function build(){
+ const text=$('#prompt').value.trim();
+ if(!text){msg('Describe a task first, for example: "When a lead fills my form, add them to a sheet."');return}
+ busy=true;$('#build').disabled=true;$('#build').textContent='Building...';msg('');
+ let w=null,used='';
+ try{
+  const sample=window.claude&&claude.use?await claude.use('sample'):null;
+  if(sample){
+   w=await sample.json('You design automations for non-technical business owners. Turn the request into JSON only, no other text: {"name":"short title","trigger":{"app":"","event":""},"steps":[{"app":"","action":"","detail":"","risky":false}]}. Use 2 to 6 steps, plain language, and well-known apps (Gmail, Slack, Google Sheets, Google Calendar, QuickBooks, Typeform, etc). Set risky to true if a step sends a message to someone outside the company, spends money, or changes or deletes records. Request: '+text);
+   if(!valid(w))w=null;
+  }
+ }catch(e){w=null}
+ if(!w){w=local(text);used='Built with basic matching. Review each step and adjust it.'}
+ w.steps.forEach(s=>{s.ask=!!(s.risky||RISKY.test(s.action));delete s.risky});
+ wf=w;render();msg(used);
+ busy=false;$('#build').disabled=false;$('#build').textContent='Build automation';
+}
+
+function render(){
+ const box=$('#flow');box.replaceChildren();$('#log').replaceChildren();runId++;
+ if(!wf){$('#flowwrap').hidden=true;return}
+ $('#flowwrap').hidden=false;$('#wfname').value=wf.name||'Untitled automation';
+ const t=el('div','node trigger');const tb=el('div','nb');
+ tb.append(el('small',0,'When this happens'),el('b',0,wf.trigger.event),el('small',0,wf.trigger.app));
+ t.append(chip(wf.trigger.app),tb);box.append(t);
+ wf.steps.forEach((s,i)=>{
+  box.append(el('div','link'));
+  const n=el('div','node'),b=el('div','nb');
+  b.append(el('small',0,'Then'),el('b',0,s.action),el('small',0,s.app+(s.detail?' — '+s.detail:'')));
+  const o=el('div','opts'),lb=el('label'),cb=el('input');cb.type='checkbox';cb.checked=s.ask;
+  cb.onchange=()=>s.ask=cb.checked;lb.append(cb,document.createTextNode('Ask me before this runs'));
+  const rm=el('button',0,'Remove');rm.onclick=()=>{if(wf.steps.length<2){msg('An automation needs at least one step.');return}wf.steps.splice(i,1);render()};
+  o.append(lb,rm);b.append(o);n.append(chip(s.app),b);box.append(n);
+ });
+}
+
+function line(cls,text){const d=el('div',cls,text);$('#log').append(d);return d}
+function approval(step){
+ return new Promise(res=>{
+  const d=line('wait','Waiting for you: "'+step.action+'" ');
+  const y=el('button','pri','Approve'),n=el('button',0,'Skip');
+  y.style.marginLeft='8px';n.style.marginLeft='6px';
+  y.onclick=()=>{d.remove();res(true)};n.onclick=()=>{d.remove();res(false)};
+  d.append(y,n);y.focus();
+ });
+}
+async function test(){
+ if(!wf)return;const id=++runId;$('#log').replaceChildren();$('#test').disabled=true;
+ line(0,'Test run started with sample data. Nothing real is sent.');
+ await sleep(500);if(id!==runId)return;line('ok','Trigger: '+wf.trigger.event+' ('+wf.trigger.app+')');
+ for(const s of wf.steps){
+  await sleep(650);if(id!==runId)return;
+  if(s.ask){const ok=await approval(s);if(id!==runId)return;if(!ok){line('skip','Skipped: '+s.action);continue}}
+  line('ok',s.action+' ('+s.app+')');
+ }
+ await sleep(400);if(id!==runId)return;line(0,'Test finished. If it looks right, save it.');$('#test').disabled=false;
+}
+
+function save(){
+ if(!wf)return;wf.name=$('#wfname').value.trim()||'Untitled automation';
+ saved.unshift({id:Date.now(),on:true,wf:JSON.parse(JSON.stringify(wf))});persist();renderSaved();msg('Saved. It appears in your list below.');
+}
+function renderSaved(){
+ const box=$('#saved');box.replaceChildren();
+ if(!saved.length){box.append(el('p','empty','Nothing saved yet. Build one above and press Save automation.'));return}
+ saved.forEach(a=>{
+  const r=el('div','saved-item'),b=el('div','nb');
+  b.append(el('b',0,a.wf.name),el('small',0,a.wf.steps.length+' steps · '+(a.on?'Active':'Paused')));
+  const tg=el('button',0,a.on?'Pause':'Switch on');tg.onclick=()=>{a.on=!a.on;persist();renderSaved()};
+  const op=el('button',0,'Open');op.onclick=()=>{wf=JSON.parse(JSON.stringify(a.wf));render();scrollTo({top:0,behavior:'smooth'})};
+  const dl=el('button',0,'Delete');dl.onclick=()=>{saved=saved.filter(x=>x!==a);persist();renderSaved()};
+  r.append(b,tg,op,dl);box.append(r);
+ });
+}
+$('#build').onclick=build;$('#test').onclick=test;$('#save').onclick=save;
+$('#wfname').oninput=e=>{if(wf)wf.name=e.target.value};
+document.querySelectorAll('.ex').forEach(b=>b.onclick=()=>{$('#prompt').value=b.dataset.ex;$('#prompt').focus()});
+renderSaved();
+</script></body></html>
